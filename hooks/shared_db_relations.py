@@ -62,10 +62,10 @@ def shared_db_changed():
                      database,
                      username):
         passwd_file = "/var/lib/mysql/mysql-{}.passwd".format(username)
-        if hostname != local_hostname:
-            remote_ip = socket.gethostbyname(hostname)
-        else:
-            remote_ip = '127.0.0.1'
+
+        remote_ips = [socket.gethostbyname(hostname)]
+        if hostname == local_hostname:
+            remote_ips.append('127.0.0.1')
 
         if not os.path.exists(passwd_file):
             password = pwgen()
@@ -78,12 +78,13 @@ def shared_db_changed():
 
         if not database_exists(database):
             create_database(database)
-        if not grant_exists(database,
-                            username,
-                            remote_ip):
-            create_grant(database,
-                         username,
-                         remote_ip, password)
+        for remote_ip in remote_ips:
+          if not grant_exists(database,
+                              username,
+                              remote_ip):
+              create_grant(database,
+                           username,
+                           remote_ip, password)
         return password
 
     if not cluster.eligible_leader(LEADER_RES):
